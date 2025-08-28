@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>跨境电商选品：王文明的沙发（Sofa）数据建模流程 | Single‑File</title>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <style>
     :root{
       --bg:#0f172a;         /* slate-900 */
@@ -30,7 +31,7 @@
     .chip{background:var(--chip);color:#d1d5db;padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid #2b3444}
 
     .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
-    .card{grid-column:span 12;background:linear-gradient(180deg,#0f172a, #0c1326);border:1px solid #1f2a44;border-radius:var(--br);box-shadow:var(--shadow);padding:18px}
+    .card{grid-column:span 12;background:linear-gradient(180deg,#0f172a, #0c1326);border:1px solid #1f2a44;border-radius:var(--br);box-shadow:var(--shadow);padding:18px; opacity:0; transform:translateY(20px);}
     @media(min-width:800px){.span-6{grid-column:span 6}.span-4{grid-column:span 4}.span-8{grid-column:span 8}.span-3{grid-column:span 3}}
 
     h2{font-size:18px;margin:0 0 10px}
@@ -66,13 +67,17 @@
 
     .btn{display:inline-block;padding:10px 14px;border-radius:12px;border:1px solid #2b3958;color:#e2e8f0;background:#0f1a33;text-decoration:none}
     .btn:hover{background:#132045}
+
+    /* New styles for visualization */
+    #viz-section { margin-top: 20px; }
+    canvas { width: 100%; height: 400px; background: var(--card); border-radius: var(--br); }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <div>
-        <div class="title">跨境电商选品：<span style="color:var(--brand)">沙发（Sofa）</span> 数据建模流程</div>
+        <div class="title">王文明的跨境电商选品：<span style="color:var(--brand)">沙发（Sofa）</span> 数据建模流程</div>
         <div class="subtitle">单文件可视化说明 · 目标：用数据驱动「是否做、做哪款、定多少价、备多少货」</div>
       </div>
       <div class="badges">
@@ -217,6 +222,24 @@ clusters = kmeans(vec, k=8)
       </div>
     </section>
 
+    <!-- 新增海关数据可视化部分 -->
+    <section class="grid" id="viz-section">
+      <div class="card span-12">
+        <h2>美国家具进口海关数据可视化（2024上半年）</h2>
+        <p>根据美国海关数据（来源：Furniture Today），2024上半年美国家具进口总额达126亿美元，同比增长5%。其中沙发相关类别（如木框架软垫座椅）进口额达21亿美元，同比增长16%。以下是主要进口来源国数据可视化（单位：亿美元）。</p>
+        <canvas id="importChart"></canvas>
+        <details><summary>数据详情</summary>
+          <ul>
+            <li>总进口：126亿美元（+5% vs 2023）</li>
+            <li>越南：44亿美元（+19%）</li>
+            <li>中国：32亿美元（+2%）</li>
+            <li>木框架软垫座椅（沙发主要类别）：21亿美元（+16%）</li>
+            <li>其他类别：杂木家具27亿美元（+5%），金属框架软垫座椅双位数增长。</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+
     <!-- 决策矩阵与落地 -->
     <section class="grid">
       <div class="card span-8">
@@ -296,7 +319,58 @@ clusters = kmeans(vec, k=8)
     function toggleAll(open){
       document.querySelectorAll('details').forEach(d=>d.open=open);
     }
+
+    // GSAP animations for cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+      gsap.to(card, {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        delay: index * 0.2,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: card,
+          start: 'top 80%',
+          toggleActions: 'play none none reverse'
+        }
+      });
+    });
+
+    // Visualization with Canvas (simple bar chart)
+    const ctx = document.getElementById('importChart').getContext('2d');
+    const data = {
+      labels: ['总进口', '越南', '中国', '木框架沙发类', '杂木家具'],
+      values: [126, 44, 32, 21, 27], // in billion USD
+      colors: ['#22d3ee', '#a78bfa', '#34d399', '#f59e0b', '#f87171']
+    };
+
+    const barWidth = 50;
+    const maxValue = Math.max(...data.values);
+    const scale = 300 / maxValue; // height scale
+
+    data.values.forEach((value, i) => {
+      const x = i * 100 + 50;
+      const height = value * scale;
+      ctx.fillStyle = data.colors[i];
+      ctx.fillRect(x, 400 - height, barWidth, height);
+      ctx.fillStyle = '#e5e7eb';
+      ctx.font = '12px sans-serif';
+      ctx.fillText(data.labels[i], x, 410);
+      ctx.fillText(value + 'B', x + 10, 400 - height - 10);
+    });
+
+    // Animate bars with GSAP
+    gsap.from('#importChart', { 
+      opacity: 0, 
+      y: 50, 
+      duration: 1.5, 
+      ease: 'bounce.out',
+      scrollTrigger: {
+        trigger: '#viz-section',
+        start: 'top 80%'
+      }
+    });
   </script>
 </body>
 </html>
-
