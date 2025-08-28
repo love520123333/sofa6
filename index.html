@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>跨境电商选品：沙发（Sofa）数据建模流程 | Single‑File</title>
+  <style>
+    :root{
+      --bg:#0f172a;         /* slate-900 */
+      --panel:#111827ee;    /* gray-900 */
+      --muted:#94a3b8;      /* slate-400 */
+      --text:#e5e7eb;       /* gray-200 */
+      --brand:#22d3ee;      /* cyan-400 */
+      --accent:#a78bfa;     /* violet-400 */
+      --ok:#34d399;         /* emerald-400 */
+      --warn:#f59e0b;       /* amber-500 */
+      --bad:#f87171;        /* red-400 */
+      --card:#0b1224;       /* deep panel */
+      --chip:#1f2937;       /* gray-800 */
+      --code:#0a0f1f;       /* code bg */
+      --br:18px;
+      --shadow:0 10px 35px rgba(0,0,0,.35);
+    }
+    html,body{background:linear-gradient(180deg,#0a0f1f 0%, #0f172a 60%, #0b1324 100%); color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; margin:0;}
+    .wrap{max-width:1200px;margin:0 auto;padding:28px;}
+    header{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;margin:10px 0 20px;}
+    .title{font-size:26px;line-height:1.15;font-weight:800;letter-spacing:.2px}
+    .subtitle{color:var(--muted);font-size:14px}
+    .badges{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{background:var(--chip);color:#d1d5db;padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid #2b3444}
+
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+    .card{grid-column:span 12;background:linear-gradient(180deg,#0f172a, #0c1326);border:1px solid #1f2a44;border-radius:var(--br);box-shadow:var(--shadow);padding:18px}
+    @media(min-width:800px){.span-6{grid-column:span 6}.span-4{grid-column:span 4}.span-8{grid-column:span 8}.span-3{grid-column:span 3}}
+
+    h2{font-size:18px;margin:0 0 10px}
+    h3{font-size:15px;margin:12px 0 8px;color:#dbeafe}
+    p,li{font-size:14px;color:#cbd5e1}
+    ul{margin:8px 0 0 18px}
+    .hint{font-size:12px;color:var(--muted)}
+
+    .flow{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+    .flow .step{background:var(--card);border:1px dashed #26334f;border-radius:12px;padding:10px 12px;font-size:12px}
+
+    .kpi{display:flex;gap:12px;flex-wrap:wrap}
+    .kpi .box{flex:1 1 180px;background:var(--card);border:1px solid #27324c;border-radius:14px;padding:14px}
+    .kpi .num{font-size:22px;font-weight:800;color:var(--brand)}
+
+    .table{width:100%;border-collapse:separate;border-spacing:0 8px}
+    .table th,.table td{padding:10px 12px;text-align:left;font-size:13px}
+    .table thead th{color:#c7d2fe}
+    .table tbody tr{background:rgba(17,24,39,.5);border:1px solid #23304a}
+    .table tbody tr td:first-child{border-radius:12px 0 0 12px}
+    .table tbody tr td:last-child{border-radius:0 12px 12px 0}
+
+    .code{background:var(--code);border:1px solid #1f2a44;border-radius:12px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;white-space:pre-wrap}
+
+    .flowchart{background:var(--card);border:1px solid #27324c;border-radius:16px;padding:10px}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .pill{padding:8px 12px;border-radius:999px;border:1px solid #2b3a58;background:#0d162e}
+    .pill .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}
+    .c-brand{background:var(--brand)}.c-accent{background:var(--accent)}.c-ok{background:var(--ok)}.c-warn{background:var(--warn)}.c-bad{background:var(--bad)}
+
+    details{background:rgba(17,24,39,.6);border:1px solid #24324e;border-radius:12px;padding:10px}
+    details>summary{cursor:pointer;color:#e0f2fe;font-weight:700}
+
+    .btn{display:inline-block;padding:10px 14px;border-radius:12px;border:1px solid #2b3958;color:#e2e8f0;background:#0f1a33;text-decoration:none}
+    .btn:hover{background:#132045}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <div class="title">跨境电商选品：<span style="color:var(--brand)">沙发（Sofa）</span> 数据建模流程</div>
+        <div class="subtitle">单文件可视化说明 · 目标：用数据驱动「是否做、做哪款、定多少价、备多少货」</div>
+      </div>
+      <div class="badges">
+        <span class="chip">关键词聚类</span>
+        <span class="chip">季节性预测</span>
+        <span class="chip">海关/HS 异常</span>
+        <span class="chip">竞品价格带</span>
+        <span class="chip">RFM 客群</span>
+      </div>
+    </header>
+
+    <!-- 总览流程 -->
+    <section class="grid">
+      <div class="card span-8">
+        <h2>流程总览</h2>
+        <div class="flow">
+          <div class="step">① 数据源采集（站内/站外/行业）</div>
+          <div class="step">② 预处理（清洗/标准化/标签化）</div>
+          <div class="step">③ 建模（6 大模型并行）</div>
+          <div class="step">④ 评分与优先级矩阵</div>
+          <div class="step">⑤ 小规模验证（广告/样品）</div>
+          <div class="step">⑥ 上架与定价/备货</div>
+          <div class="step">⑦ 动态迭代（周/月）</div>
+        </div>
+        <p class="hint">本页以「沙发」为例：关键词如 <em>sectional sofa</em>、<em>sleeper sofa</em>、<em>small apartment sofa</em> 等。</p>
+      </div>
+
+      <div class="card span-4">
+        <h2>KPI 面板（示例阈值）</h2>
+        <div class="kpi">
+          <div class="box"><div class="num">≥ 600</div><div>月搜索量（核心词）</div></div>
+          <div class="box"><div class="num">≤ 200</div><div>竞品链接数（长尾词）</div></div>
+          <div class="box"><div class="num">≥ 15%</div><div>目标毛利率</div></div>
+          <div class="box"><div class="num">≤ 35 天</div><div>目标库存周转</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 数据源与预处理 -->
+    <section class="grid">
+      <div class="card span-6">
+        <h2>数据源</h2>
+        <ul>
+          <li><b>站内：</b>关键词、转化率、加购/放弃、竞品榜单</li>
+          <li><b>站外：</b>Google Trends、社媒热度（TikTok/IG/Pinterest）</li>
+          <li><b>行业：</b>海关出口（家具相关 HS 章目）、价格/体积/材质</li>
+        </ul>
+        <details><summary>沙发样例数据要点</summary>
+          <ul>
+            <li>高频组合：<code>“sleeper sofa small space”</code>、<code>“modern sectional with storage”</code></li>
+            <li>材质偏好：科技布/亚麻/防水防污涂层</li>
+            <li>功能偏好：可折叠、带储物、可拆洗</li>
+          </ul>
+        </details>
+      </div>
+      <div class="card span-6">
+        <h2>预处理</h2>
+        <ul>
+          <li>清洗：去重、缺失值、异常价格</li>
+          <li>标准化：币种统一、时间对齐、类目映射</li>
+          <li>标签化：季节标签、材质标签、功能标签</li>
+        </ul>
+        <div class="code"># 伪代码：关键词清洗与去重
+clean = deduplicate(lowercase(strip(accents(keywords))))
+vec   = tfidf_vectorize(clean)
+clusters = kmeans(vec, k=8)
+          </div>
+      </div>
+    </section>
+
+    <!-- 建模层 -->
+    <section class="grid">
+      <div class="card span-6">
+        <h2>① 关键词聚类模型（需求图谱）</h2>
+        <p>方法：TF‑IDF / Word2Vec → K‑Means/LDA；输出「需求簇」。</p>
+        <table class="table">
+          <thead><tr><th>需求簇</th><th>代表词</th><th>含义</th></tr></thead>
+          <tbody>
+            <tr><td>小户型</td><td>small space / 72‑78" / slim arm</td><td>长度受限，优先紧凑与储物</td></tr>
+            <tr><td>沙发床</td><td>sleeper / pull‑out / guest</td><td>应急睡眠场景，注重展开结构</td></tr>
+            <tr><td>功能储物</td><td>storage / chaise / ottoman</td><td>靠背/贵妃位储物一体化</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card span-6">
+        <h2>② 季节性预测（时间序列）</h2>
+        <p>方法：SARIMA / Prophet / STL；输出旺季窗口与备货偏移。</p>
+        <ul>
+          <li>旺季假设：Q4 家具促销期、返校季租房需求上升</li>
+          <li>备货建议：旺季前 6–8 周启动排产与入仓</li>
+        </ul>
+        <details><summary>时间序列建模要点</summary>
+          <ul>
+            <li>分解：趋势 + 季节 + 残差</li>
+            <li>校验：AIC/MAE；滚动窗口交叉验证</li>
+          </ul>
+        </details>
+      </div>
+
+      <div class="card span-6">
+        <h2>③ 海关/HS 异常监测（趋势雷达）</h2>
+        <p>方法：同比/环比偏离、Z‑Score、Isolation Forest；输出异常增长品类。</p>
+        <ul>
+          <li>关注：家具/座椅相关章目（示例：座椅与家具类目）</li>
+          <li>用例：若某材质/结构项出口额连续 3 期超均值 +2σ，入「新品观察池」。</li>
+        </ul>
+      </div>
+
+      <div class="card span-6">
+        <h2>④ 竞品价格带模型（断层扫描）</h2>
+        <p>方法：抓取 Top N 竞品价格，构建直方图，识别空白带。</p>
+        <table class="table">
+          <thead><tr><th>价格区间</th><th>链接数</th><th>建议</th></tr></thead>
+          <tbody>
+            <tr><td>$199–$249</td><td>密集</td><td>红海，除非差异化</td></tr>
+            <tr><td>$349–$399</td><td>稀疏</td><td><b>可切入：储物+易清洁面料</b></td></tr>
+            <tr><td>$599–$699</td><td>少量品牌</td><td>需要设计/材质背书</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card span-6">
+        <h2>⑤ 用户分层（RFM/聚类）</h2>
+        <p>方法：RFM 打分 + K‑Means；输出人群包与偏好特征。</p>
+        <ul>
+          <li>高价值复购：偏好真皮/高端面料；可推高客单组合（沙发+脚凳）。</li>
+          <li>新客：价格敏感，主打「小户型+可拆洗」功能卖点。</li>
+        </ul>
+      </div>
+
+      <div class="card span-6">
+        <h2>⑥ 供需比/利润评分（BI 汇总）</h2>
+        <p>方法：标准化指标加权评分：搜索量、竞品数、转化率、毛利率、价格带稀疏度。</p>
+        <div class="code">score = 0.30*norm(search_vol)
+      + 0.20*norm(gap_price_band)
+      + 0.20*norm(conv_rate)
+      + 0.20*norm(gross_margin)
+      + 0.10*norm(hs_growth)
+# 得分 ≥ 0.65 → 进入打样与小流量测试
+        </div>
+      </div>
+    </section>
+
+    <!-- 决策矩阵与落地 -->
+    <section class="grid">
+      <div class="card span-8">
+        <h2>选品优先级矩阵（示例）</h2>
+        <table class="table">
+          <thead><tr><th>候选款式</th><th>需求簇匹配</th><th>价格带空白</th><th>毛利预估</th><th>综合得分</th><th>动作</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>72" 小户型沙发床（带储物）</td>
+              <td>高</td><td>中‑高</td><td>15–18%</td><td>0.72</td><td><span style="color:var(--ok)">打样 & 试投放</span></td>
+            </tr>
+            <tr>
+              <td>模块化组合沙发（可扩展）</td>
+              <td>中</td><td>高</td><td>12–15%</td><td>0.66</td><td>小批量上新</td>
+            </tr>
+            <tr>
+              <td>真皮三人位（高端）</td>
+              <td>中</td><td>低</td><td>20%+</td><td>0.58</td><td><span style="color:var(--warn)">验证品牌背书后再上</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card span-4">
+        <h2>执行时间线（建议）</h2>
+        <ul>
+          <li><b>第 1–2 周：</b>数据抓取 & 建模初始化</li>
+          <li><b>第 3 周：</b>样品打样 + 价格带验证</li>
+          <li><b>第 4 周：</b>PPC 小预算 A/B 测试</li>
+          <li><b>持续：</b>周更关键词 & 价带；月更季节模型</li>
+        </ul>
+        <a class="btn" href="#" onclick="toggleAll(true);return false;">一键展开所有详情</a>
+      </div>
+    </section>
+
+    <!-- 简易可视化流程（SVG） -->
+    <section class="grid">
+      <div class="card span-12 flowchart">
+        <h2>可视化流程图（简化版）</h2>
+        <div class="row">
+          <span class="pill"><span class="dot c-brand"></span>数据采集</span>
+          <span>→</span>
+          <span class="pill"><span class="dot c-accent"></span>预处理/标签</span>
+          <span>→</span>
+          <span class="pill"><span class="dot c-ok"></span>6 大模型并行</span>
+          <span>→</span>
+          <span class="pill"><span class="dot c-warn"></span>评分矩阵</span>
+          <span>→</span>
+          <span class="pill"><span class="dot c-bad"></span>风险控制</span>
+          <span>→</span>
+          <span class="pill"><span class="dot c-ok"></span>小规模验证</span>
+          <span>→</span>
+          <span class="pill"><span class="dot c-brand"></span>规模化上架</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ / 操作要点 -->
+    <section class="grid">
+      <div class="card span-12">
+        <h2>落地操作清单</h2>
+        <ul>
+          <li>搭建数据仓（关键词/竞品/价格/评价/海关），每天定时更新。</li>
+          <li>关键词聚类每周重跑；价格带直方图每日更新；RFM 每月重算。</li>
+          <li>设置预警：搜索量周环比 +50% 或 HS 出口额 +2σ → 启动应急选品流程。</li>
+          <li>广告验证：Top3 候选款式分别投放 7 天，观察 CTR/CVR/ACOS。</li>
+          <li>备货策略：按季节模型回溯测试后，设置安全库存 & 周转目标。</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="wrap" style="padding:0;margin-top:8px">
+      <p class="hint">提示：示例数据与阈值仅用于演示，请替换为你的业务实际数据与工具输出。</p>
+    </footer>
+  </div>
+
+  <script>
+    function toggleAll(open){
+      document.querySelectorAll('details').forEach(d=>d.open=open);
+    }
+  </script>
+</body>
+</html>
